@@ -1,0 +1,70 @@
+# Rust / Anchor
+target/
+**/*.rs.bk
+.anchor/
+test-ledger/
+.DS_Store
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+dist/
+.next/
+out/
+build/
+
+# Environment
+.env
+.env.local
+.env.*.local
+**/*.env
+
+# IDE
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Database
+*.db
+*.sqlite
+postgres-data/
+
+# Solana
+.solana/
+test-ledger/
+*.so
+*.json.d
+
+# Keys (NEVER COMMIT PRIVATE KEYS)
+**/id.json
+**/*-keypair.json
+**/keypair.json
+**/*.key
+**/*.pem
+*_private.asc
+yetse_genesis.json
+
+# Docker
+docker-compose.override.yml
+
+# Temporary
+tmp/
+temp/
+*.tmp
