@@ -1,0 +1,15 @@
+[package]
+name = "proof-registry"
+version = "0.1.0"
+description = "OpenBook Proof Registry - Deliverable proof storage"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "proof_registry"
+
+[features]
+default = []
+
+[dependencies]
+anchor-lang = "0.29.0"
