@@ -1,0 +1,84 @@
+═══════════════════════════════════════════════════════════
+                   OPENBOOK PROTOCOL
+                  GENESIS SIGNATURE
+═══════════════════════════════════════════════════════════
+
+I, known to the world as Yetse, am the original creator and
+architect of the OpenBook Protocol.
+
+This signature cryptographically proves my authorship and
+serves as an immutable record of this protocol's origin.
+
+═══════════════════════════════════════════════════════════
+                    TIMESTAMP PROOF
+═══════════════════════════════════════════════════════════
+
+Date: [FILL IN - e.g., January 3rd, 2025]
+Time: [FILL IN - e.g., 14:23:45 UTC]
+
+Solana Block Height: [FILL IN - run: solana block-height]
+Bitcoin Block Hash: [FILL IN - from blockchain.info]
+
+Message: "In the spirit of transparency, we build."
+
+═══════════════════════════════════════════════════════════
+                  CRYPTOGRAPHIC IDENTITY
+═══════════════════════════════════════════════════════════
+
+PGP Key Fingerprint: [FILL IN - from gpg --fingerprint]
+Solana Genesis Address: [FILL IN - from solana-keygen pubkey]
+GitHub Account: github.com/yetse
+Email: yetse@protonmail.com
+
+First Commit Hash: [WILL BE FILLED AFTER FIRST COMMIT]
+Repository: https://github.com/yetse/openbook-protocol
+
+═══════════════════════════════════════════════════════════
+                      DECLARATION
+═══════════════════════════════════════════════════════════
+
+This protocol is released as a gift to humanity.
+It belongs to no person, no company, no government.
+The code is open source. The vision is transparent.
+The governance is decentralized.
+
+I built this to solve a problem: fundraising has been opaque,
+centralized, and controlled by gatekeepers. OpenBook changes
+that. Every contribution, every budget, every payout is
+public and auditable.
+
+I do not seek recognition, profit, or fame from this work.
+I seek only to see transparent, decentralized fundraising
+become reality.
+
+═══════════════════════════════════════════════════════════
+                    FUTURE VERIFICATION
+═══════════════════════════════════════════════════════════
+
+Anyone claiming to be Yetse must cryptographically prove they
+hold the private keys corresponding to:
+1. This PGP key
+2. The Solana genesis wallet
+
+I will prove my identity when I choose, or upon my death via
+dead man's switch. Until then, judge me by my code and my
+contributions, not by my name or face.
+
+The protocol matters. The person does not.
+
+═══════════════════════════════════════════════════════════
+
+Signed,
+Yetse
+Creator of OpenBook Protocol
+
+[DATE] [TIME]
+
+═══════════════════════════════════════════════════════════
+
+INSTRUCTIONS:
+1. Fill in all [BRACKETED] values above
+2. Run: gpg --clearsign GENESIS_SIGNATURE.txt
+3. This creates GENESIS_SIGNATURE.txt.asc (the signed version)
+4. Commit the .asc file to Git (signed commit)
+5. After commit, add commit hash above and re-sign

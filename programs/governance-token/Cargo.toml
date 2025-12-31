@@ -1,0 +1,17 @@
+[package]
+name = "governance-token"
+version = "0.1.0"
+description = "OpenBook Governance Token - OBOOK token for DAO control"
+edition = "2021"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "governance_token"
+
+[features]
+default = []
+
+[dependencies]
+anchor-lang = "0.29.0"
+anchor-spl = "0.29.0"
+spl-token = "4.0.0"

@@ -1,0 +1,149 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:15-alpine
+    container_name: openbook-postgres
+    environment:
+      POSTGRES_DB: openbook
+      POSTGRES_USER: openbook
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpassword}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./services/indexer/migrations:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U openbook"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - openbook-network
+
+  # Redis cache
+  redis:
+    image: redis:7-alpine
+    container_name: openbook-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - openbook-network
+
+  # Indexer service (event processor)
+  indexer:
+    build:
+      context: ./services/indexer
+      dockerfile: Dockerfile
+    container_name: openbook-indexer
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      DATABASE_URL: postgres://openbook:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/openbook
+      REDIS_URL: redis://redis:6379
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL:-https://api.devnet.solana.com}
+      SOLANA_RPC_FALLBACK_URL: ${SOLANA_RPC_FALLBACK_URL:-https://api.devnet.solana.com}
+      PROGRAM_ID_CAMPAIGN: ${PROGRAM_ID_CAMPAIGN:-Camp1111111111111111111111111111111111111111}
+      PROGRAM_ID_TASK: ${PROGRAM_ID_TASK:-Task1111111111111111111111111111111111111111}
+      PROGRAM_ID_BUDGET: ${PROGRAM_ID_BUDGET:-Budg1111111111111111111111111111111111111111}
+      PROGRAM_ID_ESCROW: ${PROGRAM_ID_ESCROW:-Escr1111111111111111111111111111111111111111}
+      PROGRAM_ID_PROOF: ${PROGRAM_ID_PROOF:-Prof1111111111111111111111111111111111111111}
+      PROGRAM_ID_DISPUTE: ${PROGRAM_ID_DISPUTE:-Disp1111111111111111111111111111111111111111}
+      PROGRAM_ID_GOVERNANCE: ${PROGRAM_ID_GOVERNANCE:-Gove1111111111111111111111111111111111111111}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./services/indexer:/app
+      - /app/node_modules
+    networks:
+      - openbook-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # API service (REST endpoints)
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    container_name: openbook-api
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3001
+      DATABASE_URL: postgres://openbook:${POSTGRES_PASSWORD:-devpassword}@postgres:5432/openbook
+      REDIS_URL: redis://redis:6379
+      SOLANA_RPC_URL: ${SOLANA_RPC_URL:-https://api.devnet.solana.com}
+      CORS_ORIGIN: ${CORS_ORIGIN:-*}
+      RATE_LIMIT_ANONYMOUS: ${RATE_LIMIT_ANONYMOUS:-60}
+      RATE_LIMIT_AUTHENTICATED: ${RATE_LIMIT_AUTHENTICATED:-300}
+    ports:
+      - "${API_PORT:-3001}:3001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - ./services/api:/app
+      - /app/node_modules
+    networks:
+      - openbook-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Web frontend (Next.js)
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: openbook-web
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:3001}
+      NEXT_PUBLIC_SOLANA_RPC_URL: ${NEXT_PUBLIC_SOLANA_RPC_URL:-https://api.devnet.solana.com}
+      NEXT_PUBLIC_SOLANA_NETWORK: ${NEXT_PUBLIC_SOLANA_NETWORK:-devnet}
+      NEXT_PUBLIC_USDC_MINT: ${NEXT_PUBLIC_USDC_MINT:-EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v}
+    ports:
+      - "${WEB_PORT:-3000}:3000"
+    depends_on:
+      - api
+    restart: unless-stopped
+    volumes:
+      - ./web:/app
+      - /app/node_modules
+      - /app/.next
+    networks:
+      - openbook-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  openbook-network:
+    driver: bridge
