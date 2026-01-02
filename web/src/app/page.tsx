@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { getDiscoveryTrending, getDiscoveryTop, getDiscoveryNew, getDiscoveryNearGoal } from '@/lib/api';
 import CampaignCard from '@/components/CampaignCard';
 import TaskCard from '@/components/TaskCard';
+import SkeletonCard from '@/components/SkeletonCard';
 
 type Tab = 'trending' | 'top' | 'new' | 'near-goal';
 
@@ -118,9 +119,10 @@ export default function Home() {
 
       {/* Content */}
       {isLoading ? (
-        <div className="text-center py-12">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-          <p className="mt-4 text-gray-600">Loading...</p>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => (
+            <SkeletonCard key={i} />
+          ))}
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

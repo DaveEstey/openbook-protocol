@@ -1,5 +1,13 @@
 import { FastifyInstance } from 'fastify';
 import { Database } from '../db/client';
+import {
+  validateLimit,
+  validateOffset,
+  validateSortColumn,
+  validateSortOrder,
+  validateString,
+  ValidationError,
+} from '../lib/validation';
 
 export async function campaignsRoutes(fastify: FastifyInstance, db: Database) {
   /**
@@ -7,54 +15,65 @@ export async function campaignsRoutes(fastify: FastifyInstance, db: Database) {
    * List all campaigns with optional filtering and sorting
    */
   fastify.get('/campaigns', async (request, reply) => {
-    const { category, state, sort = 'created_at', order = 'desc', limit = 20, offset = 0 } = request.query as any;
+    try {
+      const queryParams = request.query as any;
 
-    let query = `
-      SELECT
-        c.*,
-        cm.total_tasks,
-        cm.total_contributions_usd,
-        cm.unique_contributors,
-        cm.trending_score
-      FROM campaigns c
-      LEFT JOIN campaign_metrics cm ON cm.campaign_pubkey = c.pubkey
-      WHERE 1=1
-    `;
-    const params: any[] = [];
-    let paramCount = 0;
+      // Validate pagination
+      const limit = validateLimit(queryParams.limit || 20);
+      const offset = validateOffset(queryParams.offset || 0);
 
-    if (category) {
-      params.push(category);
-      query += ` AND c.category = $${++paramCount}`;
+      // Validate sorting
+      const allowedSort = ['created_at', 'trending_score', 'total_contributions_usd'];
+      const sortColumn = validateSortColumn(queryParams.sort || 'created_at', allowedSort);
+      const orderDir = validateSortOrder(queryParams.order || 'desc');
+
+      let query = `
+        SELECT
+          c.*,
+          cm.total_tasks,
+          cm.total_contributions_usd,
+          cm.unique_contributors,
+          cm.trending_score
+        FROM campaigns c
+        LEFT JOIN campaign_metrics cm ON cm.campaign_pubkey = c.pubkey
+        WHERE 1=1
+      `;
+      const params: any[] = [];
+      let paramCount = 0;
+
+      if (queryParams.category) {
+        const category = validateString(queryParams.category, 'category', 50);
+        params.push(category);
+        query += ` AND c.category = $${++paramCount}`;
+      }
+
+      if (queryParams.state) {
+        const state = validateString(queryParams.state, 'state', 20);
+        params.push(state);
+        query += ` AND c.state = $${++paramCount}`;
+      }
+
+      query += ` ORDER BY ${sortColumn === 'created_at' ? 'c.' : 'cm.'}${sortColumn} ${orderDir}`;
+
+      params.push(limit, offset);
+      query += ` LIMIT $${++paramCount} OFFSET $${++paramCount}`;
+
+      const result = await db.query(query, params);
+
+      return {
+        campaigns: result.rows,
+        pagination: {
+          limit,
+          offset,
+          total: result.rowCount,
+        },
+      };
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return reply.code(400).send({ error: error.message });
+      }
+      throw error;
     }
-
-    if (state) {
-      params.push(state);
-      query += ` AND c.state = $${++paramCount}`;
-    }
-
-    // Validate sort column
-    const allowedSort = ['created_at', 'trending_score', 'total_contributions_usd'];
-    const sortColumn = allowedSort.includes(sort) ? sort : 'created_at';
-
-    // Validate order
-    const orderDir = order.toLowerCase() === 'asc' ? 'ASC' : 'DESC';
-
-    query += ` ORDER BY ${sortColumn === 'created_at' ? 'c.' : 'cm.'}${sortColumn} ${orderDir}`;
-
-    params.push(limit, offset);
-    query += ` LIMIT $${++paramCount} OFFSET $${++paramCount}`;
-
-    const result = await db.query(query, params);
-
-    return {
-      campaigns: result.rows,
-      pagination: {
-        limit,
-        offset,
-        total: result.rowCount,
-      },
-    };
   });
 
   /**

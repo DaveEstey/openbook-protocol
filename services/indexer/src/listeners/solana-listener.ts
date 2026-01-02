@@ -76,36 +76,59 @@ export class SolanaListener {
 
     // Get signatures for each program in this slot range
     for (const [programName, config] of this.programConfigs.entries()) {
-      try {
-        const signatures = await this.getSignaturesForProgram(
-          config.programId,
-          startSlot,
-          endSlot
-        );
+      let retries = 0;
+      const maxRetries = 3;
 
-        logger.debug(
-          { programName, signatures: signatures.length },
-          'Found signatures'
-        );
+      while (retries <= maxRetries) {
+        try {
+          const signatures = await this.getSignaturesForProgram(
+            config.programId,
+            startSlot,
+            endSlot
+          );
 
-        // Process each transaction
-        for (const sig of signatures) {
-          try {
-            const events = await this.parseEventsFromTransaction(
-              sig.signature,
-              config.programId.toBase58(),
-              config.idl
-            );
+          logger.debug(
+            { programName, signatures: signatures.length },
+            'Found signatures'
+          );
 
-            for (const event of events) {
-              await onEvent(event);
+          // Process each transaction
+          for (const sig of signatures) {
+            try {
+              const events = await this.parseEventsFromTransaction(
+                sig.signature,
+                config.programId.toBase58(),
+                config.idl
+              );
+
+              for (const event of events) {
+                await onEvent(event);
+              }
+            } catch (error) {
+              logger.error({ signature: sig.signature, error }, 'Failed to process transaction');
+              // Continue processing other transactions
             }
-          } catch (error) {
-            logger.error({ signature: sig.signature, error }, 'Failed to process transaction');
+          }
+
+          break; // Success, exit retry loop
+        } catch (error: any) {
+          retries++;
+          const isRetryable = error.message?.includes('429') ||
+                            error.message?.includes('timeout') ||
+                            error.message?.includes('ECONNRESET');
+
+          if (retries <= maxRetries && isRetryable) {
+            const backoffMs = Math.pow(2, retries) * 1000; // Exponential backoff
+            logger.warn(
+              { programName, retries, backoffMs, error: error.message },
+              'Retrying after error'
+            );
+            await this.sleep(backoffMs);
+          } else {
+            logger.error({ programName, error, retries }, 'Failed to get signatures after retries');
+            break; // Give up on this program for this batch
           }
         }
-      } catch (error) {
-        logger.error({ programName, error }, 'Failed to get signatures for program');
       }
     }
 
@@ -113,21 +136,39 @@ export class SolanaListener {
   }
 
   /**
-   * Get current slot from RPC
+   * Get current slot from RPC with retry logic
    */
   private async getCurrentSlot(): Promise<number> {
-    try {
-      return await this.connection.getSlot('confirmed');
-    } catch (error) {
-      logger.error({ error }, 'Failed to get current slot from primary RPC');
+    let retries = 0;
+    const maxRetries = 3;
 
-      if (this.fallbackConnection) {
-        logger.info('Trying fallback RPC');
-        return await this.fallbackConnection.getSlot('confirmed');
+    while (retries <= maxRetries) {
+      try {
+        return await this.connection.getSlot('confirmed');
+      } catch (error: any) {
+        logger.error({ error, retries }, 'Failed to get current slot from primary RPC');
+
+        if (this.fallbackConnection && retries === 0) {
+          logger.info('Trying fallback RPC');
+          try {
+            return await this.fallbackConnection.getSlot('confirmed');
+          } catch (fallbackError) {
+            logger.error({ error: fallbackError }, 'Fallback RPC also failed');
+          }
+        }
+
+        retries++;
+        if (retries <= maxRetries) {
+          const backoffMs = Math.pow(2, retries) * 1000;
+          logger.warn({ retries, backoffMs }, 'Retrying getCurrentSlot');
+          await this.sleep(backoffMs);
+        } else {
+          throw new Error('Failed to get current slot after all retries');
+        }
       }
-
-      throw error;
     }
+
+    throw new Error('Unexpected: exited retry loop without success or error');
   }
 
   /**

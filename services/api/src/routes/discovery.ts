@@ -1,5 +1,12 @@
 import { FastifyInstance } from 'fastify';
 import { Database } from '../db/client';
+import {
+  validateLimit,
+  validateOffset,
+  validateSearchQuery,
+  validateEnum,
+  ValidationError,
+} from '../lib/validation';
 
 export async function discoveryRoutes(fastify: FastifyInstance, db: Database) {
   /**
@@ -172,15 +179,22 @@ export async function discoveryRoutes(fastify: FastifyInstance, db: Database) {
    * Full-text search across campaigns and tasks
    */
   fastify.get('/search', async (request, reply) => {
-    const { q, type = 'all', limit = 20, offset = 0 } = request.query as any;
+    try {
+      const queryParams = request.query as any;
 
-    if (!q) {
-      return reply.code(400).send({ error: 'Missing query parameter: q' });
-    }
+      if (!queryParams.q) {
+        return reply.code(400).send({ error: 'Missing query parameter: q' });
+      }
 
-    const results: any = {
-      query: q,
-    };
+      // Validate search query
+      const q = validateSearchQuery(queryParams.q);
+      const type = validateEnum(queryParams.type || 'all', 'type', ['all', 'campaigns', 'tasks'] as const);
+      const limit = validateLimit(queryParams.limit || 20);
+      const offset = validateOffset(queryParams.offset || 0);
+
+      const results: any = {
+        query: q,
+      };
 
     if (type === 'all' || type === 'campaigns') {
       const campaignsResult = await db.query(
@@ -222,6 +236,12 @@ export async function discoveryRoutes(fastify: FastifyInstance, db: Database) {
       results.tasks = tasksResult.rows;
     }
 
-    return results;
+      return results;
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        return reply.code(400).send({ error: error.message });
+      }
+      throw error;
+    }
   });
 }

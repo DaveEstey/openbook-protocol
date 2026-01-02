@@ -4,8 +4,9 @@ import { use } from 'react';
 import useSWR from 'swr';
 import Link from 'next/link';
 import { getCampaign } from '@/lib/api';
-import { formatUSDC, formatTimeAgo, formatAddress, getStateBadgeColor } from '@/lib/utils';
+import { formatUSDC, formatTimeAgo, getStateBadgeColor } from '@/lib/utils';
 import TaskCard from '@/components/TaskCard';
+import CopyableAddress from '@/components/CopyableAddress';
 
 export default function CampaignPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -58,13 +59,13 @@ export default function CampaignPage({ params }: { params: Promise<{ id: string 
           </div>
         </div>
 
-        <div className="flex items-center space-x-4 text-sm text-gray-600 mb-6">
+        <div className="flex items-center flex-wrap gap-4 text-sm text-gray-600 mb-6">
           <span className="bg-blue-50 text-blue-700 px-3 py-1 rounded-full">
             {campaign.category}
           </span>
           <span>Created {formatTimeAgo(campaign.created_at)}</span>
-          <span>
-            by <span className="font-mono">{formatAddress(campaign.creator)}</span>
+          <span className="flex items-center gap-2">
+            by <CopyableAddress address={campaign.creator} />
           </span>
         </div>
 

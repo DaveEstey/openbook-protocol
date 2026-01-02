@@ -7,11 +7,11 @@ import { getTask, getTaskLedger, getTaskVotes } from '@/lib/api';
 import {
   formatUSDC,
   formatTimeAgo,
-  formatAddress,
   getStateBadgeColor,
   calculateFundingProgress,
 } from '@/lib/utils';
 import ContributeButton from '@/components/ContributeButton';
+import CopyableAddress from '@/components/CopyableAddress';
 
 export default function TaskPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -87,8 +87,8 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
 
             {task.recipient && (
               <div className="bg-blue-50 p-4 rounded-lg mb-4">
-                <div className="text-sm text-blue-900 font-medium">Assigned Recipient</div>
-                <div className="font-mono text-blue-700">{formatAddress(task.recipient, 8)}</div>
+                <div className="text-sm text-blue-900 font-medium mb-1">Assigned Recipient</div>
+                <CopyableAddress address={task.recipient} chars={8} className="text-blue-700" />
               </div>
             )}
           </div>
@@ -124,7 +124,7 @@ export default function TaskPage({ params }: { params: Promise<{ id: string }> }
                   </div>
                   <div>
                     <dt className="text-gray-500">Creator</dt>
-                    <dd className="font-mono text-gray-900">{formatAddress(task.creator, 8)}</dd>
+                    <dd><CopyableAddress address={task.creator} chars={8} /></dd>
                   </div>
                   {task.deadline && (
                     <div>
