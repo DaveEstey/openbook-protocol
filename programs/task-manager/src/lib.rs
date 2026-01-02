@@ -58,7 +58,7 @@ pub mod task_manager {
     }
 
     /// Open budget voting
-    pub fn start_budget_voting(ctx: Context<UpdateTaskState>) -> Result<()> {
+    pub fn start_budget_voting(ctx: Context<StartBudgetVoting>) -> Result<()> {
         let task = &mut ctx.accounts.task;
         let clock = Clock::get()?;
 
@@ -216,10 +216,22 @@ pub struct CreateTask<'info> {
 }
 
 #[derive(Accounts)]
+pub struct StartBudgetVoting<'info> {
+    #[account(
+        mut,
+        constraint = task.creator == creator.key() @ TaskError::UnauthorizedCreator
+    )]
+    pub task: Account<'info, Task>,
+
+    pub creator: Signer<'info>,
+}
+
+#[derive(Accounts)]
 pub struct UpdateTaskState<'info> {
     #[account(mut)]
     pub task: Account<'info, Task>,
 
+    /// Authority (could be DAO/governance for approve/reject operations)
     pub authority: Signer<'info>,
 }
 
