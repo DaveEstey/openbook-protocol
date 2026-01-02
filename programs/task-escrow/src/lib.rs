@@ -393,18 +393,24 @@ pub struct EscrowUnfrozen {
 // Errors
 #[error_code]
 pub enum EscrowError {
-    #[msg("Contribution too small - minimum $10 USDC")]
+    #[msg("Contribution too small - minimum $10 USDC (10,000,000 lamports) required for anti-Sybil protection")]
     ContributionTooSmall,
 
-    #[msg("Insufficient funds in escrow")]
+    #[msg("Insufficient funds in escrow - requested amount exceeds available balance (contributed - paid_out - refunded)")]
     InsufficientFunds,
 
-    #[msg("Escrow is frozen (dispute active)")]
+    #[msg("Escrow is frozen due to active dispute - no contributions, payouts, or refunds allowed until resolved")]
     EscrowFrozen,
 
-    #[msg("Already refunded")]
+    #[msg("Contribution already refunded - cannot refund twice")]
     AlreadyRefunded,
 
-    #[msg("CRITICAL: Escrow invariant violated")]
+    #[msg("CRITICAL: Escrow invariant violated - vault balance does not match accounting (total_contributed - total_paid_out - total_refunded)")]
     InvariantViolation,
+
+    #[msg("Unauthorized - only specified recipient can execute payout")]
+    UnauthorizedPayout,
+
+    #[msg("Unauthorized - only original contributor can request refund")]
+    UnauthorizedRefund,
 }

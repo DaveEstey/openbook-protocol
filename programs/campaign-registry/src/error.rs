@@ -26,7 +26,7 @@ pub enum CampaignError {
     #[msg("Only campaign creator can perform this action")]
     UnauthorizedCreator,
 
-    ##[msg("Campaign is not in correct state for this operation")]
+    #[msg("Campaign is not in correct state for this operation")]
     InvalidState,
 
     #[msg("Campaign has active tasks and cannot be archived")]

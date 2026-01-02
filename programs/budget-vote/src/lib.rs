@@ -183,12 +183,18 @@ pub struct BudgetFinalized {
 
 #[error_code]
 pub enum BudgetVoteError {
-    #[msg("Contribution too small - minimum $10 USDC required to vote")]
+    #[msg("Contribution too small - minimum $10 USDC (10,000,000 lamports) required to vote (anti-Sybil)")]
     ContributionTooSmall,
 
-    #[msg("Quorum not met - need 60% of funds to vote and at least 3 voters")]
+    #[msg("Quorum not met - need 60% of total contribution value to participate and minimum 3 unique voters")]
     QuorumNotMet,
 
-    #[msg("Budget voting period not active")]
+    #[msg("Budget voting period not active - task must be in VotingBudget state")]
     VotingNotActive,
+
+    #[msg("Invalid budget proposal - proposed budget cannot be zero")]
+    InvalidBudgetProposal,
+
+    #[msg("Vote weight calculation overflow - contribution amount too large")]
+    VoteWeightOverflow,
 }
